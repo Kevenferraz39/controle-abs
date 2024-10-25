@@ -6,15 +6,6 @@ import '../../../estilo.css';
 import Navbar from '../../Navbar';
 import Footer from '../../Footer';
 
-const formatDate = (dateString) => {
-    const date = new Date(dateString + "T00:00:00");
-    return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-};
-
 const RelatorioEUpdate = () => {
     const [representantesArray, setRepresentantesArray] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
@@ -26,12 +17,31 @@ const RelatorioEUpdate = () => {
     const [pendingChanges, setPendingChanges] = useState({});
     const [buttonLabel, setButtonLabel] = useState("GERAR RELATÓRIO");
     const [showGenerateButton, setShowGenerateButton] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const getCurrentDate = () => {
-        const today = new Date();
-        return today.toISOString().split("T")[0];
-    };
+const getCurrentDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+useEffect(() => {
+    const currentDate = getCurrentDate();
+    setSearchData(currentDate);
+}, []);
+
+const formatDate = (dateString) => {
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+};
+
 
     const getTeamLeaderByRE = (re) => {
         const representante = representantesArray.find(item => item.RE_TL === re);
@@ -43,27 +53,29 @@ const RelatorioEUpdate = () => {
     }, []);
 
     const fetchData = async () => {
+        setLoading(true);
+        setError(null);
         try {
             const db = getDatabase(app);
             const dbRef = ref(db, "Chamada/Representante/Representantes");
             const snapshot = await get(dbRef);
-
+    
             if (!snapshot.exists()) {
                 setError("Nenhum dado disponível.");
                 return;
             }
-
+    
             const myData = snapshot.val();
             const temporaryArray = Object.keys(myData).map(myFireid => ({
                 ...myData[myFireid],
                 RepresentantesId: myFireid
             }));
-
+    
             if (searchData) {
                 const historicoRef = ref(db, `Historico/Chamada/${searchData}`);
                 const historicoSnapshot = await get(historicoRef);
                 let historicoData = [];
-
+    
                 if (historicoSnapshot.exists()) {
                     historicoData = historicoSnapshot.val();
                     historicoData = Object.keys(historicoData).map(historicoId => ({
@@ -72,16 +84,16 @@ const RelatorioEUpdate = () => {
                         DATA: searchData
                     }));
                 }
-
+    
                 const combinedData = temporaryArray.map(item => {
                     const historicoItem = historicoData.find(h => h.RepresentantesId === item.RepresentantesId) || {};
                     return {
                         ...item,
-                        Presenca_sistemica: historicoItem.Presenca_sistemica || "",
+                        Presenca: historicoItem.Presenca || "",
                         Justificativa: historicoItem.Justificativa || ""
                     };
                 });
-
+    
                 setRepresentantesArray(combinedData);
                 applyFilters(combinedData);
             } else {
@@ -91,9 +103,11 @@ const RelatorioEUpdate = () => {
         } catch (error) {
             console.error("Erro ao buscar dados:", error);
             setError("Erro ao buscar dados. Tente novamente mais tarde.");
+        } finally {
+            setLoading(false);
         }
     };
-
+    
     const applyFilters = (data) => {
         if (!searchRE.trim()) {
             alert("Por favor, preencha o RE.");
@@ -108,8 +122,22 @@ const RelatorioEUpdate = () => {
 
         const teamLeader = representante.Team_Leader;
         const filtered = data.filter(item => item.Team_Leader === teamLeader && item.DATA === searchData);
+        
+        const faltas = filtered.filter(item => item.Presenca !== "Presente");
 
-        setFilteredData(filtered);
+        if (faltas.length > 0) {
+            setFilteredData(faltas);
+        } else {
+            const totalPresentes = filtered.filter(item => item.Presenca === "Presente").length;
+
+            if (totalPresentes === filtered.length && totalPresentes > 0) {
+                alert(`Olá, ${capitalizeName(getTeamLeaderByRE(searchRE))}, a sua equipe está completa e conta com ${totalPresentes} colaboradores presentes.`);
+                setFilteredData([]);
+            } else {
+                setFilteredData(filtered);
+            }
+        }
+
         setReportGenerated(true);
         setShowGenerateButton(false);
     };
@@ -127,7 +155,7 @@ const RelatorioEUpdate = () => {
             ...prev,
             [RepresentantesId]: {
                 ...prev[RepresentantesId],
-                Presenca_sistemica: newStatus
+                Presenca: newStatus
             }
         }));
     };
@@ -141,7 +169,7 @@ const RelatorioEUpdate = () => {
 
             const fullRepresentantesData = {
                 ...RepresentantesOriginal,
-                Presenca_sistemica: RepresentantesData.Presenca_sistemica || RepresentantesOriginal.Presenca_sistemica || "",
+                Presenca: RepresentantesData.Presenca || RepresentantesOriginal.Presenca || "",
                 Justificativa: RepresentantesData.Justificativa || RepresentantesOriginal.Justificativa || ""
             };
 
@@ -170,13 +198,12 @@ const RelatorioEUpdate = () => {
     };
 
     const handleViewRecords = () => {
-        fetchData();  // Recarregar dados
-        setViewOnly(true);  // Definir para visualização apenas
-        setButtonLabel("ATUALIZAR DADOS");  // Atualizar o botão para permitir edição
-        setShowGenerateButton(true);  // Mostrar botão de atualização
-        setShowDateField(true);  // Mostrar o campo de data
+        fetchData();
+        setViewOnly(true);
+        setButtonLabel("ATUALIZAR DADOS");
+        setShowGenerateButton(true);
+        setShowDateField(true);
     };
-    
 
     useEffect(() => {
         if (searchRE.trim() && !viewOnly) {
@@ -210,7 +237,7 @@ const RelatorioEUpdate = () => {
                         )}
 
                         {showGenerateButton && (
-                            <button onClick={handleGenerateReport}>{buttonLabel}</button>
+                            <button onClick={handleGenerateReport} disabled={loading}>{buttonLabel}</button>
                         )}
                         {reportGenerated && !viewOnly && (
                             <>
@@ -219,9 +246,10 @@ const RelatorioEUpdate = () => {
                             </>
                         )}
                         {viewOnly && (
-                            <button onClick={handleGenerateReport}>{buttonLabel}</button>
+                            <button onClick={handleGenerateReport} disabled={loading}>{buttonLabel}</button>
                         )}
                     </div>
+                    {loading && <div>Carregando...</div>}
                     {reportGenerated && (
                         <>
                             <h2>
@@ -242,7 +270,7 @@ const RelatorioEUpdate = () => {
                                             <th>Turma</th>
                                             <th>Status</th>
                                             <th>Data</th>
-                                            <th className="presensa-sistemica">Presença Sistêmica</th>
+                                            <th className="presensa-sistemic">Presença Sistêmica</th>
                                             <th>Validação</th>
                                             <th>Justificativa</th>
                                         </tr>
@@ -261,53 +289,25 @@ const RelatorioEUpdate = () => {
                                                 <td>{item.Turma}</td>
                                                 <td>{item.Status}</td>
                                                 <td>{formatDate(item.DATA)}</td>
-                                                <td className="presensa-sistemica">
-                                                    {pendingChanges[item.RepresentantesId]?.Presenca_sistemica !== undefined
-                                                        ? pendingChanges[item.RepresentantesId]?.Presenca_sistemica
-                                                        : item.Presenca_sistemica}
-                                                </td>
+                                                <td className="presensa-sistemic">{item.Presenca}</td>
                                                 <td>
-                                                    <select value={pendingChanges[item.RepresentantesId]?.Presenca_sistemica || ""}
+                                                    <select value={pendingChanges[item.RepresentantesId]?.Presenca || ""}
                                                         onChange={(e) => handleStatusChange(item.RepresentantesId, e.target.value)}>
-                                                         <option value="">Selecione</option>
-                                                            <option value="Presente">Presente</option>
-                                                            <option value="Afastamento">Afastamento</option>
-                                                            <option value="Afastamento-Acd-Trab">Afastamento Acd Trabalho</option>
-                                                            <option value="Atestado">Atestado</option>
-                                                            <option value="Atestado-Acd-Trab">Atestado Acd Trabalho</option>
-                                                            <option value="Atestado-Horas">Atestado Horas</option>
-                                                            <option value="Banco-de-Horas">Banco de Horas</option>
-                                                            <option value="Decl-Medica">Declaração Médica</option>
-                                                            <option value="Falta">Falta</option>
-                                                            <option value="Ferias">Férias</option>
-                                                            <option value="Folga-Escala">Folga Escala</option>
-                                                            <option value="Fretado">Fretado</option>
-                                                            <option value="Licenca">Licença</option>
-                                                            <option value="Presenca-HE">Presença (HE)</option>
-                                                            <option value="Sinergia-CX">Sinergia CX</option>
-                                                            <option value="Sinergia-IN">Sinergia IN</option>
-                                                            <option value="Sinergia-INV">Sinergia INV</option>
-                                                            <option value="Sinergia-Loss">Sinergia Loss</option>
-                                                            <option value="Sinergia-MWH">Sinergia MWH</option>
-                                                            <option value="Sinergia-OUT">Sinergia OUT</option>
-                                                            <option value="Sinergia-Qua">Sinergia Qua</option>
-                                                            <option value="Sinergia-RC01">Sinergia RC01</option>
-                                                            <option value="Sinergia-RC-SP10">Sinergia RC-SP10</option>
-                                                            <option value="Sinergia-RET">Sinergia RET</option>
-                                                            <option value="Sinergia-SP01">Sinergia SP01</option>
-                                                            <option value="Sinergia-SP02">Sinergia SP02</option>
-                                                            <option value="Sinergia-SP03">Sinergia SP03</option>
-                                                            <option value="Sinergia-SP04">Sinergia SP04</option>
-                                                            <option value="Sinergia-SP05">Sinergia SP05</option>
-                                                            <option value="Sinergia-SP06">Sinergia SP06</option>
-                                                            <option value="Sinergia-Sortation">Sinergia Sortation</option>
-                                                            <option value="Sinergia-Suspensao">Sinergia Suspensão</option>
-                                                            <option value="Sinergia-SVC">Sinergia SVC</option>
-                                                            <option value="Transferido">Transferido</option>
-                                                            <option value="Treinamento-Ext">Treinamento Ext</option>
-                                                            <option value="Treinamento-Int">Treinamento Int</option>
-                                                            <option value="Treinamento-REP-III">Treinamento REP III</option>
-                                                            <option value="Sinergia-Insumo">Sinergia Insumo</option>
+                                                        <option value="">Selecione</option>
+                                                        <option value="Presente">Presente</option>
+                                                        <option value="Afastamento">Afastamento</option>
+                                                        <option value="Afastamento-Acd-Trab">Afastamento Acd Trabalho</option>
+                                                        <option value="Atestado">Atestado</option>
+                                                        <option value="Atestado-Acd-Trab">Atestado Acd Trabalho</option>
+                                                        <option value="Atestado-Horas">Atestado Horas</option>
+                                                        <option value="Banco-de-Horas">Banco de Horas</option>
+                                                        <option value="Decl-Medica">Declaração Médica</option>
+                                                        <option value="Falta">Falta</option>
+                                                        <option value="Ferias">Férias</option>
+                                                        <option value="Folga-Escala">Folga Escala</option>
+                                                        <option value="Fretado">Fretado</option>
+                                                        <option value="Licenca">Licença</option>
+                                                        <option value="Presenca-HE">Presença (HE)</option>
                                                     </select>
                                                 </td>
                                                 {!viewOnly && (
