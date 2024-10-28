@@ -17,31 +17,31 @@ const RelatorioEUpdate = () => {
     const [pendingChanges, setPendingChanges] = useState({});
     const [buttonLabel, setButtonLabel] = useState("GERAR RELATÓRIO");
     const [showGenerateButton, setShowGenerateButton] = useState(true);
+    const [showViewRecordsButton, setShowViewRecordsButton] = useState(false); // Novo estado para controlar visibilidade do botão
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-const getCurrentDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
+    const getCurrentDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
-useEffect(() => {
-    const currentDate = getCurrentDate();
-    setSearchData(currentDate);
-}, []);
+    useEffect(() => {
+        const currentDate = getCurrentDate();
+        setSearchData(currentDate);
+    }, []);
 
-const formatDate = (dateString) => {
-    const date = new Date(dateString + "T00:00:00");
-    return date.toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-};
-
+    const formatDate = (dateString) => {
+        const date = new Date(dateString + "T00:00:00");
+        return date.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
 
     const getTeamLeaderByRE = (re) => {
         const representante = representantesArray.find(item => item.RE_TL === re);
@@ -59,23 +59,23 @@ const formatDate = (dateString) => {
             const db = getDatabase(app);
             const dbRef = ref(db, "Chamada/Representante/Representantes");
             const snapshot = await get(dbRef);
-    
+
             if (!snapshot.exists()) {
                 setError("Nenhum dado disponível.");
                 return;
             }
-    
+
             const myData = snapshot.val();
             const temporaryArray = Object.keys(myData).map(myFireid => ({
                 ...myData[myFireid],
                 RepresentantesId: myFireid
             }));
-    
+
             if (searchData) {
                 const historicoRef = ref(db, `Historico/Chamada/${searchData}`);
                 const historicoSnapshot = await get(historicoRef);
                 let historicoData = [];
-    
+
                 if (historicoSnapshot.exists()) {
                     historicoData = historicoSnapshot.val();
                     historicoData = Object.keys(historicoData).map(historicoId => ({
@@ -84,7 +84,7 @@ const formatDate = (dateString) => {
                         DATA: searchData
                     }));
                 }
-    
+
                 const combinedData = temporaryArray.map(item => {
                     const historicoItem = historicoData.find(h => h.RepresentantesId === item.RepresentantesId) || {};
                     return {
@@ -93,7 +93,7 @@ const formatDate = (dateString) => {
                         Justificativa: historicoItem.Justificativa || ""
                     };
                 });
-    
+
                 setRepresentantesArray(combinedData);
                 applyFilters(combinedData);
             } else {
@@ -107,7 +107,7 @@ const formatDate = (dateString) => {
             setLoading(false);
         }
     };
-    
+
     const applyFilters = (data) => {
         if (!searchRE.trim()) {
             alert("Por favor, preencha o RE.");
@@ -128,14 +128,7 @@ const formatDate = (dateString) => {
         if (faltas.length > 0) {
             setFilteredData(faltas);
         } else {
-            const totalPresentes = filtered.filter(item => item.Presenca === "Presente").length;
-
-            if (totalPresentes === filtered.length && totalPresentes > 0) {
-                alert(`Olá, ${capitalizeName(getTeamLeaderByRE(searchRE))}, a sua equipe está completa e conta com ${totalPresentes} colaboradores presentes.`);
-                setFilteredData([]);
-            } else {
-                setFilteredData(filtered);
-            }
+           console.log("Nenhuma falta encontrada.")
         }
 
         setReportGenerated(true);
@@ -148,6 +141,7 @@ const formatDate = (dateString) => {
         setPendingChanges({});
         setButtonLabel("GERAR RELATÓRIO");
         setShowGenerateButton(false);
+        setShowViewRecordsButton(false); // Ocultar botão ao gerar relatório
     };
 
     const handleStatusChange = (RepresentantesId, newStatus) => {
@@ -180,6 +174,7 @@ const formatDate = (dateString) => {
         alert("Alterações salvas com sucesso!");
         setPendingChanges({});
         await fetchData();
+        setShowViewRecordsButton(true); // Exibir botão "Ver Registro" após salvar
     };
 
     const addJustificativa = (RepresentantesId) => {
@@ -216,6 +211,35 @@ const formatDate = (dateString) => {
     
     const capitalizeName = (name) => name.toUpperCase();
 
+    const color = (Status) => {
+        
+        // Comparação sem distinguir maiúsculas e minúsculas e removendo espaços extras
+        if (Status.trim().toLowerCase() === "ativo") {
+            return "#00b23e"; // Cor para "Ativo"
+        } else if(Status.trim().toLowerCase() === "desligado") {
+            return "#red"; // Desligado
+        }else if(Status.trim().toLowerCase() === "afastado") {
+            return "#ead729"; // Afastado
+        }else{
+            return "#dddbd8"; // outros valores
+        }
+    };
+
+    const colorr = (presenca) => {
+        // Comparação sem distinguir maiúsculas e minúsculas e removendo espaços extras
+        if (presenca.trim().toLowerCase() === "presente") {
+            return "#03c748"; // Verde para "Presente"
+        }else if (presenca.trim().toLowerCase() === "folga-escala") {
+            return "#1bed65"; // Vermelho para "Falta"
+        } else if (presenca.trim().toLowerCase() === "falta") {
+            return "#ff0000"; // Vermelho para "Falta"
+        }else if (presenca.trim().toLowerCase() === "ferias") {
+            return "#ffbb00"; // Vermelho para "Falta"
+        } else {
+            return ""; // Cor neutra para outros valores
+        }
+    };
+
     return (
         <>
             <Helmet>
@@ -227,7 +251,7 @@ const formatDate = (dateString) => {
                     {error && <div className="error-message">{error}</div>}
                     <div className="campo-de-pesquisa">
                         <label htmlFor="RETL">RE:</label>
-                        <input type="text" id="RETL" value={searchRE} onChange={(e) => setSearchRE(e.target.value)} placeholder="Digite seu RE"/>
+                        <input type="text" id="RETL" value={searchRE} onChange={(e) => setSearchRE(e.target.value)} placeholder=""/>
 
                         {showDateField && (
                             <>
@@ -242,19 +266,22 @@ const formatDate = (dateString) => {
                         {reportGenerated && !viewOnly && (
                             <>
                                 <button onClick={handleSave}>SALVAR</button>
-                                <button onClick={handleViewRecords}>VER REGISTROS</button>
+                                {showViewRecordsButton && (
+                                    <button onClick={handleViewRecords}>VER REGISTROS</button>
+                                )}
                             </>
                         )}
                         {viewOnly && (
                             <button onClick={handleGenerateReport} disabled={loading}>{buttonLabel}</button>
                         )}
                     </div>
-                    {loading && <div>Carregando...</div>}
+                    {loading && <center><div>Carregando<span>...</span></div></center>}
                     {reportGenerated && (
                         <>
                             <h2>
                                 Olá, <span>{capitalizeName(getTeamLeaderByRE(searchRE))}</span>, aqui está o relatório <span>ABS</span> da data <span>{formatDate(searchData)}</span>&nbsp;!
-                            </h2>
+                            </h2><br/>
+                            <center><h4>{viewOnly ? "Relatório de Presença" : "Realize a tratativa"}</h4></center>
                             <div className="container-tabela">
                                 <table>
                                     <thead>
@@ -263,15 +290,14 @@ const formatDate = (dateString) => {
                                             <th>Nome</th>
                                             <th>RE</th>
                                             <th>Turno</th>
-                                            <th>Escala Padrão</th>
-                                            <th>Cargo Padrão</th>
-                                            <th>Área Padrão</th>
+                                            <th>Escala</th>
+                                            <th>Cargo</th>
+                                            <th>Área</th>
                                             <th>Empresa</th>
                                             <th>Turma</th>
                                             <th>Status</th>
                                             <th>Data</th>
-                                            <th className="presensa-sistemic">Presença Sistêmica</th>
-                                            <th>Validação</th>
+                                            <th className="presensa-sistemic">Presença</th>
                                             <th>Justificativa</th>
                                         </tr>
                                     </thead>
@@ -282,39 +308,73 @@ const formatDate = (dateString) => {
                                                 <td>{capitalizeName(item.Nome)}</td>
                                                 <td>{item.Matricula}</td>
                                                 <td>{item.Turno}</td>
-                                                <td>{item.Escala_Padrao}</td>
+                                                <td><center>{item.Escala_Padrao}</center></td>
                                                 <td>{item.Cargo_Padrao}</td>
                                                 <td>{item.Area_Padrao}</td>
                                                 <td>{item.Empresa}</td>
-                                                <td>{item.Turma}</td>
-                                                <td>{item.Status}</td>
+                                                <td><center>{item.Turma}</center></td>
+                                                <td style={{ color: color(item.Status)}}>{item.Status}</td>
                                                 <td>{formatDate(item.DATA)}</td>
-                                                <td className="presensa-sistemic">{item.Presenca}</td>
-                                                <td>
-                                                    <select value={pendingChanges[item.RepresentantesId]?.Presenca || ""}
-                                                        onChange={(e) => handleStatusChange(item.RepresentantesId, e.target.value)}>
+                                                <td className="presensa-sistemic">
+                                                    {!viewOnly ? (
+                                                        <select 
+                                                        value={pendingChanges[item.RepresentantesId]?.Presenca || item.Presenca || ""} 
+                                                        onChange={(e) => handleStatusChange(item.RepresentantesId, e.target.value)}
+                                                        style={{ backgroundColor: colorr(pendingChanges[item.RepresentantesId]?.Presenca || item.Presenca || "") }}>
+                                                        
                                                         <option value="">Selecione</option>
-                                                        <option value="Presente">Presente</option>
-                                                        <option value="Afastamento">Afastamento</option>
-                                                        <option value="Afastamento-Acd-Trab">Afastamento Acd Trabalho</option>
-                                                        <option value="Atestado">Atestado</option>
-                                                        <option value="Atestado-Acd-Trab">Atestado Acd Trabalho</option>
-                                                        <option value="Atestado-Horas">Atestado Horas</option>
-                                                        <option value="Banco-de-Horas">Banco de Horas</option>
-                                                        <option value="Decl-Medica">Declaração Médica</option>
-                                                        <option value="Falta">Falta</option>
-                                                        <option value="Ferias">Férias</option>
-                                                        <option value="Folga-Escala">Folga Escala</option>
-                                                        <option value="Fretado">Fretado</option>
-                                                        <option value="Licenca">Licença</option>
-                                                        <option value="Presenca-HE">Presença (HE)</option>
+                                                            <option value="Presente">Presente</option>
+                                                            <option value="Afastamento">Afastamento</option>
+                                                            <option value="Afastamento-Acd-Trab">Afastamento Acd Trabalho</option>
+                                                            <option value="Atestado">Atestado</option>
+                                                            <option value="Atestado-Acd-Trab">Atestado Acd Trabalho</option>
+                                                            <option value="Atestado-Horas">Atestado Horas</option>
+                                                            <option value="Banco-de-Horas">Banco de Horas</option>
+                                                            <option value="Decl-Medica">Declaração Médica</option>
+                                                            <option value="Falta">Falta</option>
+                                                            <option value="Ferias">Férias</option>
+                                                            <option value="Folga-Escala">Folga Escala</option>
+                                                            <option value="Fretado">Fretado</option>
+                                                            <option value="Licenca">Licença</option>
+                                                            <option value="Presenca-HE">Presença (HE)</option>
+                                                            <option value="Sinergia-CX">Sinergia CX</option>
+                                                            <option value="Sinergia-IN">Sinergia IN</option>
+                                                            <option value="Sinergia-INV">Sinergia INV</option>
+                                                            <option value="Sinergia-Loss">Sinergia Loss</option>
+                                                            <option value="Sinergia-MWH">Sinergia MWH</option>
+                                                            <option value="Sinergia-OUT">Sinergia OUT</option>
+                                                            <option value="Sinergia-Qua">Sinergia Qua</option>
+                                                            <option value="Sinergia-RC01">Sinergia RC01</option>
+                                                            <option value="Sinergia-RC-SP10">Sinergia RC-SP10</option>
+                                                            <option value="Sinergia-RET">Sinergia RET</option>
+                                                            <option value="Sinergia-SP01">Sinergia SP01</option>
+                                                            <option value="Sinergia-SP02">Sinergia SP02</option>
+                                                            <option value="Sinergia-SP03">Sinergia SP03</option>
+                                                            <option value="Sinergia-SP04">Sinergia SP04</option>
+                                                            <option value="Sinergia-SP05">Sinergia SP05</option>
+                                                            <option value="Sinergia-SP06">Sinergia SP06</option>
+                                                            <option value="Sinergia-Sortation">Sinergia Sortation</option>
+                                                            <option value="Sinergia-Suspensao">Sinergia Suspensão</option>
+                                                            <option value="Sinergia-SVC">Sinergia SVC</option>
+                                                            <option value="Transferido">Transferido</option>
+                                                            <option value="Treinamento-Ext">Treinamento Ext</option>
+                                                            <option value="Treinamento-Int">Treinamento Int</option>
+                                                            <option value="Treinamento-REP-III">Treinamento REP III</option>
+                                                            <option value="Sinergia-Insumo">Sinergia Insumo</option>
                                                     </select>
+                                                    ) : (
+                                                        <span style={{ color: colorr(item.Presenca) }}>
+                                                            {item.Presenca}
+                                                        </span>
+                                                    )}
                                                 </td>
-                                                {!viewOnly && (
-                                                    <td>
+                                                <td>
+                                                    {!viewOnly ? (
                                                         <button onClick={() => addJustificativa(item.RepresentantesId)}>Adicionar Justificativa</button>
-                                                    </td>
-                                                )}
+                                                    ) : (
+                                                        item.Justificativa
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

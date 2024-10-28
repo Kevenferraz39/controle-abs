@@ -2,8 +2,9 @@
    --color1: #2e2e30; /* Fundo */
    --color2: #242424;  /* Side & Header */
    --color3: #dddbd8; /* Texto */
-   --color4: #ea9029; /* Texto 2 */
+   --color4: #ea9029; /* Texto 2 */ 
    --color5: #de900059; /* Hover */
+   --color: #ffbb00;
 }
 
 
@@ -203,7 +204,8 @@ main {
    color: var(--color3);
 }
 
-.campo-de-pesquisa input {
+.campo-de-pesquisa input{
+   width: 92px;
    border-radius: 8px;
    border-style: solid;
    border-color: var(--color4);
@@ -213,6 +215,12 @@ main {
    background-color: var(--color1); /* Mantém o fundo na cor definida */
    color: var(--color3); /* Cor da fonte */
    outline-color: var(--color4); /* Cor ao redor do campo no foco */
+}
+#RETL {
+   width: 50px;
+   text-align: center;
+   color: var(--color3);
+   font-weight: bold;
 }
 
 /* Quando o campo está em foco (quando o usuário clica ou digita) */
