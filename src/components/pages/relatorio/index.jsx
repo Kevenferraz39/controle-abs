@@ -54,28 +54,28 @@ const RelatorioEUpdate = () => {
 
     const fetchData = async () => {
         setLoading(true);
-        setError(null);
+        setError(null); // Reset de erro
         try {
             const db = getDatabase(app);
             const dbRef = ref(db, "Chamada/Representante/Representantes");
             const snapshot = await get(dbRef);
-
+   
             if (!snapshot.exists()) {
                 setError("Nenhum dado disponível.");
                 return;
             }
-
+   
             const myData = snapshot.val();
             const temporaryArray = Object.keys(myData).map(myFireid => ({
                 ...myData[myFireid],
                 RepresentantesId: myFireid
             }));
-
+   
             if (searchData) {
                 const historicoRef = ref(db, `Historico/Chamada/${searchData}`);
                 const historicoSnapshot = await get(historicoRef);
                 let historicoData = [];
-
+   
                 if (historicoSnapshot.exists()) {
                     historicoData = historicoSnapshot.val();
                     historicoData = Object.keys(historicoData).map(historicoId => ({
@@ -84,7 +84,7 @@ const RelatorioEUpdate = () => {
                         DATA: searchData
                     }));
                 }
-
+   
                 const combinedData = temporaryArray.map(item => {
                     const historicoItem = historicoData.find(h => h.RepresentantesId === item.RepresentantesId) || {};
                     return {
@@ -93,7 +93,7 @@ const RelatorioEUpdate = () => {
                         Justificativa: historicoItem.Justificativa || ""
                     };
                 });
-
+   
                 setRepresentantesArray(combinedData);
                 applyFilters(combinedData);
             } else {
@@ -107,33 +107,38 @@ const RelatorioEUpdate = () => {
             setLoading(false);
         }
     };
+   
 
     const applyFilters = (data) => {
         if (!searchRE.trim()) {
             alert("Por favor, preencha o RE.");
             return;
         }
-
+    
         const representante = data.find(item => item.RE_TL === searchRE);
         if (!representante) {
             alert("RE não encontrado.");
             return;
         }
-
+    
         const teamLeader = representante.Team_Leader;
         const filtered = data.filter(item => item.Team_Leader === teamLeader && item.DATA === searchData);
         
-        const faltas = filtered.filter(item => item.Presenca !== "Presente");
-
-        if (faltas.length > 0) {
-            setFilteredData(faltas);
+        // Verifica se o status está entre os valores desejados
+        const Status = filtered.filter(item => 
+            ["ATIVO", "AFASTADO", "TRANSFERIDO", "TRANSFERÊNCIA SORTATION", "AFASTADA GRAVIDEZ", "TRANSFERÊNCIA BRRC01"].includes(item.Status)
+        );
+    
+        if (Status.length > 0) {
+            setFilteredData(Status);
         } else {
-           console.log("Nenhuma falta encontrada.")
+           console.log("Nenhum status encontrado.");
         }
-
+    
         setReportGenerated(true);
         setShowGenerateButton(false);
     };
+    
 
     const handleGenerateReport = async () => {
         await fetchData();
@@ -160,23 +165,25 @@ const RelatorioEUpdate = () => {
         for (const RepresentantesId in pendingChanges) {
             const RepresentantesData = pendingChanges[RepresentantesId];
             const RepresentantesOriginal = representantesArray.find(item => item.RepresentantesId === RepresentantesId);
-
+   
             const fullRepresentantesData = {
                 ...RepresentantesOriginal,
                 Presenca: RepresentantesData.Presenca || RepresentantesOriginal.Presenca || "",
                 Justificativa: RepresentantesData.Justificativa || RepresentantesOriginal.Justificativa || ""
             };
-
+   
             const dbRef = ref(db, `Historico/Chamada/${fullRepresentantesData.DATA}/${RepresentantesId}`);
             await set(dbRef, fullRepresentantesData);
         }
-        
+   
         alert("Alterações salvas com sucesso!");
         setPendingChanges({});
-        await fetchData();
-        setShowViewRecordsButton(true); // Exibir botão "Ver Registro" após salvar
+   
+        // Após salvar, exibe o botão "Ver Registro" e oculta o de "Gerar Relatório"
+        setShowViewRecordsButton(true); 
+        setShowGenerateButton(false); // Ocultar "Gerar Relatório"
     };
-
+   
     const addJustificativa = (RepresentantesId) => {
         const justificativa = prompt("Por favor, insira a justificativa:");
         if (justificativa) {
@@ -194,11 +201,12 @@ const RelatorioEUpdate = () => {
 
     const handleViewRecords = () => {
         fetchData();
-        setViewOnly(true);
+        setViewOnly(true); // Modo apenas visualização
         setButtonLabel("ATUALIZAR DADOS");
-        setShowGenerateButton(true);
-        setShowDateField(true);
+        setShowGenerateButton(true); // O botão "Gerar Relatório" deve ser exibido ao ver registros
+        setShowDateField(true); // Exibe o campo de data para o usuário alterar
     };
+   
 
     useEffect(() => {
         if (searchRE.trim() && !viewOnly) {
@@ -212,19 +220,17 @@ const RelatorioEUpdate = () => {
     const capitalizeName = (name) => name.toUpperCase();
 
     const color = (Status) => {
-        
-        // Comparação sem distinguir maiúsculas e minúsculas e removendo espaços extras
         if (Status.trim().toLowerCase() === "ativo") {
             return "#00b23e"; // Cor para "Ativo"
         } else if(Status.trim().toLowerCase() === "desligado") {
-            return "#red"; // Desligado
-        }else if(Status.trim().toLowerCase() === "afastado") {
+            return "#ff0000"; // Vermelho para "Desligado"
+        } else if(Status.trim().toLowerCase() === "afastado") {
             return "#ead729"; // Afastado
-        }else{
-            return "#dddbd8"; // outros valores
+        } else {
+            return "#dddbd8"; // Cor neutra para outros valores
         }
     };
-
+   
     const colorr = (presenca) => {
         // Comparação sem distinguir maiúsculas e minúsculas e removendo espaços extras
         if (presenca.trim().toLowerCase() === "presente") {
@@ -239,7 +245,10 @@ const RelatorioEUpdate = () => {
             return ""; // Cor neutra para outros valores
         }
     };
-
+    const flowpreencher = (Matricula) => {
+        return Matricula.trim().toLowerCase() === "flow deve preencher!" ? "oscillating" : "";
+    };
+    
     return (
         <>
             <Helmet>
@@ -306,7 +315,7 @@ const RelatorioEUpdate = () => {
                                             <tr key={index}>
                                                 <td>{item.ID_Groot}</td>
                                                 <td>{capitalizeName(item.Nome)}</td>
-                                                <td>{item.Matricula}</td>
+                                                <td className={flowpreencher(item.Matricula)}>{item.Matricula}</td>
                                                 <td>{item.Turno}</td>
                                                 <td><center>{item.Escala_Padrao}</center></td>
                                                 <td>{item.Cargo_Padrao}</td>

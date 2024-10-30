@@ -335,7 +335,7 @@ th{
 }
 td{
    padding: 8px; /* Mais espaço nas células */
-   text-align: left;
+   text-align: center;
    font-size: 14px;
    white-space: nowrap; /* Impedir quebra de linha nas células */
    margin: 0;
@@ -346,6 +346,7 @@ td{
 td button {
    background-color: var(--color4);
    border-style: none;
+   font-size: 0.6rem;
    padding: 6px;
    width: 100%;
    border-radius: 4px;
@@ -357,7 +358,7 @@ td button {
 
 td button:hover {
    background-color: var(--color2); /* Mudar cor ao passar o mouse */
-   font-size: 13px;
+   font-size: 0.6rem;
    color: var(--color3);
 }
 
@@ -389,8 +390,11 @@ th:nth-child(2) {
    position: sticky;
    z-index: 5;
 }
+td:nth-child(2){/*Faz com que somente as celulas da coluna justifiativa quebre linha quando necessario */
+   text-align:left;
+}
 td:nth-child(13){/*Faz com que somente as celulas da coluna justifiativa quebre linha quando necessario */
-   white-space: wrap; 
+   white-space: wrap;
 }
 tbody tr:nth-child(even) {
    background-color: #0e0e0f54; /* Cor de fundo para linhas pares */
@@ -419,4 +423,12 @@ tbody tr:hover {
 }
 tbody tr:nth-child(odd) {
    background-color: transparent; /* Ou outra cor de sua escolha */
+}
+
+@keyframes oscillate {
+   50% { background-color: rgba(255, 0, 0, 0.553); }
+}
+
+.oscillating {
+   animation: oscillate 2s infinite;
 }
