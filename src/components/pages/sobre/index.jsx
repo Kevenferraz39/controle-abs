@@ -2,7 +2,6 @@ import { Helmet } from 'react-helmet';
 import '../../../estilo.css'; // Corrigido para garantir que o CSS seja importado corretamente
 import Navbar from '../../Navbar';
 import Footer from '../../Footer';
-import Main from '../../Main'
 const Sobre = () => {
     return(
         <>
@@ -10,7 +9,7 @@ const Sobre = () => {
                 <title>Sobre</title>
             </Helmet>
             <main>
-                <img src="" alt="" />
+                <center><h1 className='emconstruction'>ESTÁ PÁGINA ESTÁ EM DESENVOLVIMENTO !</h1></center>
             </main>
             <Footer/>
         <Navbar/>
