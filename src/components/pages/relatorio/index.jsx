@@ -246,7 +246,7 @@ const RelatorioEUpdate = () => {
         }
     };
     const flowpreencher = (Matricula) => {
-        return Matricula.trim().toLowerCase() === "flow deve preencher!" ? "oscillating" : "";
+        return Matricula.trim().toLowerCase() === "lms deve preencher !" ? "oscillating" : "";
     };
     
     return (
