@@ -245,7 +245,7 @@ const RelatorioEUpdate = () => {
             return ""; // Cor neutra para outros valores
         }
     };
-    const flowpreencher = (Matricula) => {
+    const preenchimentoRE_REP = (Matricula) => {
         return Matricula.trim().toLowerCase() === "lms deve preencher !" ? "oscillating" : "";
     };
     
@@ -315,7 +315,7 @@ const RelatorioEUpdate = () => {
                                             <tr key={index}>
                                                 <td>{item.ID_Groot}</td>
                                                 <td>{capitalizeName(item.Nome)}</td>
-                                                <td className={flowpreencher(item.Matricula)}>{item.Matricula}</td>
+                                                <td className={preenchimentoRE_REP(item.Matricula)}>{item.Matricula}</td>
                                                 <td>{item.Turno}</td>
                                                 <td><center>{item.Escala_Padrao}</center></td>
                                                 <td>{item.Cargo_Padrao}</td>
