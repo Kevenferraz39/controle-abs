@@ -20,8 +20,8 @@ const Navbar = () => {
                     <div className="menu">
                         <Link to="/home" className={`lk ${isActive('/home')}`}>Home</Link>
                         <Link to="/" className={`lk ${isActive('/')}`}>Controle ABS</Link>
+                        <Link to="/historico" className={`lk ${isActive('/historico')}`}>Historico</Link>
                         <Link to="/Feedback" className={`lk ${isActive('/Feedback')}`}>Feedback</Link>
-
                         <button onClick={() => window.location.href = "https://sites.google.com/mercadolivre.com/idea-sp10?usp=sharing"}>
                             Voltar ao site
                         </button>

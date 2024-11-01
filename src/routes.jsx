@@ -9,6 +9,7 @@ import UpdateWrite from "./components/pages/UpdateWrite";
 import DashABS from "./components/pages/DashABS";
 import Error404 from "./components/pages/Error404";
 import Error404Alternate from "./components/pages/Error404Alternate";
+import Historico from "./components/pages/Historico";
 
 const RoutesApp = () => {
     const random404 = Math.random() < 0.5 ? <Error404 /> : <Error404Alternate />
@@ -25,6 +26,7 @@ const RoutesApp = () => {
                 <Route path="/updatewrite/:firebaseid" element={<UpdateWrite/>}/>
                 <Route path="/updateread" element={<UpdateRead/>}/>
                 <Route path="/dashABS" element={<DashABS/>}/>
+                <Route path="/historico" element={<Historico/>}/>
                
             </Routes>
         </BrowserRouter>

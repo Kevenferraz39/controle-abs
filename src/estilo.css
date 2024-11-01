@@ -108,6 +108,7 @@ header {
    font-size: 17px;
    margin-top: -5px;
 }
+
 /* Fim do cabeçalho */
 
 /*
@@ -314,6 +315,7 @@ table select{
    border-radius: 4px;
    font-weight: bold;
    color: var(--color2);
+   font-size: 0.7rem;
 }
 
 table select:hover {
@@ -349,9 +351,9 @@ td{
 td button {
    background-color: var(--color4);
    border-style: none;
-   font-size: 0.6rem;
+   font-size: 0.7rem;
    padding: 6px;
-   width: 100%;
+   width: 150px;
    border-radius: 4px;
    font-weight: bold;
    color: var(--color2);
@@ -361,7 +363,7 @@ td button {
 
 td button:hover {
    background-color: var(--color2); /* Mudar cor ao passar o mouse */
-   font-size: 0.6rem;
+   font-size: 0.7rem;
    color: var(--color3);
 }
 

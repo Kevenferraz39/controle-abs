@@ -397,5 +397,4 @@ const RelatorioEUpdate = () => {
         </>
     );
 };
-{/*Update vercel*/}
 export default RelatorioEUpdate;
