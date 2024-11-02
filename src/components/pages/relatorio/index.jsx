@@ -331,7 +331,7 @@ const RelatorioEUpdate = () => {
                                                         onChange={(e) => handleStatusChange(item.RepresentantesId, e.target.value)}
                                                         style={{ backgroundColor: colorr(pendingChanges[item.RepresentantesId]?.Presenca || item.Presenca || "") }}>
                                                         
-                                                        <option value="">Selecione</option>
+                                                            <option value="">Selecione</option>
                                                             <option value="Presente">Presente</option>
                                                             <option value="Afastamento">Afastamento</option>
                                                             <option value="Afastamento-Acd-Trab">Afastamento Acd Trabalho</option>
